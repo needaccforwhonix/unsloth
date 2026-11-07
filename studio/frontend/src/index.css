@@ -1727,6 +1727,28 @@ html[data-code-wrap]:not([data-code-line-numbers]) :is(.aui-thread-root, [data-c
 	padding-inline-start: 0;
 	text-indent: 0;
 }
+/* Capped Thinking box: fades only an edge with more past it; the second layer keeps the scrollbar unfaded. */
+[data-slot="reasoning-tail"][data-capped] {
+	--trace-fade-top: 0px;
+	--trace-fade-bottom: 0px;
+	mask-image:
+		linear-gradient(to bottom, transparent, #000 var(--trace-fade-top), #000 calc(100% - var(--trace-fade-bottom)), transparent),
+		linear-gradient(#000, #000);
+	mask-size: 100% 100%, calc(1rem * var(--ui-space-scale, 1)) 100%;
+	mask-position: 0 0, right;
+	mask-repeat: no-repeat;
+}
+[data-slot="reasoning-tail"][data-capped][data-more-above] {
+	--trace-fade-top: 1.25rem;
+}
+[data-slot="reasoning-tail"][data-capped][data-more-below] {
+	--trace-fade-bottom: 1.5rem;
+}
+@media print {
+	[data-slot="reasoning-tail"][data-capped] {
+		mask-image: none;
+	}
+}
 html[data-code-no-ligatures] :is(pre, code, kbd, samp),
 html[data-code-no-ligatures] .aui-reasoning-code-lines {
 	font-variant-ligatures: none;
@@ -4512,6 +4534,30 @@ html[data-chat-font] .aui-root {
 
 	@media print {
 		.aui-thread-root [data-slot="reasoning-transcript"] > [data-reasoning-chunk] {
+			content-visibility: visible !important;
+			contain-intrinsic-size: none !important;
+		}
+	}
+
+	/* A width change re-wraps every message: the browser pane halves the column, 0.5-0.7 s per frame
+	 * on WebKit at 300 messages. Rows marked far away by distant-rows.ts skip layout instead. Every
+	 * row records its size here, so a skipped row keeps its last rendered height; the estimate is
+	 * only for a row never rendered. Gated like the blocks above, and off on WebKitGTK, where
+	 * message-window-controller.ts parks distant rows (message-row-containment.ts). Not released
+	 * by data-interface-zooming: that would lay out the whole thread on every typography change,
+	 * and a stale height after a zoom is corrected on release like one after a width change. */
+	.aui-thread-viewport [data-role][data-message-id] {
+		contain-intrinsic-size: auto 600px;
+	}
+
+	/* Rows are flex items: Chromium lets a size-contained item shrink below its remembered height. */
+	html[data-message-row-containment="on"] .aui-thread-viewport [data-role][data-message-id][data-row-distant] {
+		content-visibility: auto;
+		flex-shrink: 0;
+	}
+
+	@media print {
+		.aui-thread-viewport [data-role][data-message-id] {
 			content-visibility: visible !important;
 			contain-intrinsic-size: none !important;
 		}
